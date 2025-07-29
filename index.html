@@ -1,0 +1,1448 @@
+<!-- index.html -->
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Positive Map - ポジティブな感情共有アプリ</title>
+    
+    <!-- PWA メタタグ -->
+    <meta name="theme-color" content="#ff6b6b">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Positive Map">
+    
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary-color: #ff6b6b;
+            --secondary-color: #4ecdc4;
+            --accent-color: #feca57;
+            --text-color: #2c3e50;
+            --background-color: #f8f9fa;
+            --card-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            --border-radius: 16px;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: var(--background-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            overscroll-behavior: none;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .app-container {
+            max-width: 414px;
+            margin: 0 auto;
+            background: white;
+            min-height: 100vh;
+            position: relative;
+            box-shadow: var(--card-shadow);
+            overflow-x: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+            color: white;
+            padding: 20px;
+            text-align: center;
+            position: relative;
+            z-index: 1000;
+        }
+
+        .lang-selector {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(255,255,255,0.2);
+            border: none;
+            color: white;
+            padding: 8px 12px;
+            border-radius: 20px;
+            cursor: pointer;
+            backdrop-filter: blur(10px);
+            font-size: 14px;
+        }
+
+        .app-title {
+            font-size: 32px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            text-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .app-subtitle {
+            font-size: 16px;
+            opacity: 0.9;
+            font-weight: 300;
+        }
+
+        .main-content {
+            padding: 20px;
+            padding-bottom: 100px;
+        }
+
+        .screen {
+            display: none;
+            animation: fadeIn 0.3s ease-in-out;
+        }
+
+        .screen.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* マップスタイル */
+        .map-container {
+            width: 100%;
+            height: 350px;
+            border-radius: var(--border-radius);
+            margin-bottom: 20px;
+            overflow: hidden;
+            box-shadow: var(--card-shadow);
+            position: relative;
+        }
+
+        #map {
+            width: 100%;
+            height: 100%;
+        }
+
+        .map-controls {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            z-index: 1000;
+            display: flex;
+            gap: 10px;
+        }
+
+        .map-control-btn {
+            background: white;
+            border: none;
+            padding: 10px;
+            border-radius: 8px;
+            cursor: pointer;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            font-size: 14px;
+        }
+
+        /* 統計表示 */
+        .stats-overview {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 10px;
+            border-radius: var(--border-radius);
+            text-align: center;
+            box-shadow: var(--card-shadow);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            cursor: pointer;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 40px rgba(0,0,0,0.15);
+        }
+
+        .stat-emoji {
+            font-size: 28px;
+            margin-bottom: 1px;
+            display: block;
+        }
+
+        .stat-number {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--primary-color);
+            margin-bottom: 1px;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: #666699;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* 投稿フォーム */
+        .post-form {
+            background: white;
+            padding: 25px;
+            border-radius: var(--border-radius);
+            box-shadow: var(--card-shadow);
+            margin-bottom: 20px;
+        }
+
+        .form-section {
+            margin-bottom: 25px;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 12px;
+            font-weight: 600;
+            color: var(--text-color);
+            font-size: 16px;
+        }
+
+        .emotion-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+        }
+
+        .emotion-btn {
+            padding: 16px 8px;
+            background: #f8f9fa;
+            border: 2px solid transparent;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+            font-size: 14px;
+        }
+
+        .emotion-btn:hover {
+            background: #e9ecef;
+            transform: scale(1.05);
+        }
+
+        .emotion-btn.selected {
+            background: linear-gradient(45deg, var(--primary-color), var(--accent-color));
+            color: white;
+            border-color: var(--primary-color);
+            transform: scale(1.05);
+        }
+
+        .emotion-emoji {
+            font-size: 24px;
+            display: block;
+            margin-bottom: 6px;
+        }
+
+        .form-input, .form-textarea {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e9ecef;
+            border-radius: 12px;
+            font-size: 16px;
+            transition: border-color 0.3s ease;
+            background: #f8f9fa;
+        }
+
+        .form-input:focus, .form-textarea:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            background: white;
+        }
+
+        .form-textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        .location-info {
+            background: #e3f2fd;
+            padding: 15px;
+            border-radius: 12px;
+            border-left: 4px solid #2196f3;
+        }
+
+        .location-status {
+            font-size: 14px;
+            color: #1976d2;
+            margin-bottom: 8px;
+        }
+
+        .coordinates {
+            font-size: 12px;
+            color: #666;
+            font-family: monospace;
+        }
+
+        /* ボタンスタイル */
+        .btn {
+            width: 100%;
+            padding: 16px 24px;
+            background: linear-gradient(45deg, var(--primary-color), #ff5252);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(255, 107, 107, 0.4);
+        }
+
+        .btn:disabled {
+            background: #bdc3c7;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .btn-secondary {
+            background: linear-gradient(45deg, var(--secondary-color), #26de81);
+        }
+
+        /* フローティングボタン */
+        .floating-btn {
+            position: fixed;
+            bottom: 90px;
+            right: 20px;
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(45deg, var(--primary-color), #ff5252);
+            border: none;
+            border-radius: 50%;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+            box-shadow: 0 8px 25px rgba(255, 107, 107, 0.4);
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+
+        .floating-btn:hover {
+            transform: scale(1.1) rotate(90deg);
+        }
+
+        /* ナビゲーション */
+        .navigation {
+            position: fixed;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 414px;
+            background: white;
+            padding: 12px 20px;
+            box-shadow: 0 -5px 20px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-around;
+            border-top: 1px solid #e9ecef;
+        }
+
+        .nav-btn {
+            background: none;
+            border: none;
+            padding: 12px 16px;
+            cursor: pointer;
+            border-radius: 12px;
+            transition: all 0.3s ease;
+            flex: 1;
+            margin: 0 4px;
+            text-align: center;
+        }
+
+        .nav-btn.active {
+            background: linear-gradient(45deg, var(--primary-color), var(--accent-color));
+            color: white;
+        }
+
+        .nav-icon {
+            font-size: 20px;
+            display: block;
+            margin-bottom: 4px;
+        }
+
+        .nav-label {
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        /* プロフィール画面 */
+        .profile-header {
+            background: linear-gradient(135deg, var(--secondary-color), #48dbfb);
+            color: white;
+            padding: 30px 25px;
+            border-radius: var(--border-radius);
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .profile-avatar {
+            width: 80px;
+            height: 80px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 50%;
+            margin: 0 auto 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+            border: 3px solid rgba(255,255,255,0.3);
+        }
+
+        .user-stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .user-stat {
+            text-align: center;
+        }
+
+        .user-stat-number {
+            font-size: 24px;
+            font-weight: 700;
+            color: white;
+        }
+
+        .user-stat-label {
+            font-size: 12px;
+            opacity: 0.8;
+        }
+
+        /* 設定フォーム */
+        .settings-form {
+            background: white;
+            padding: 25px;
+            border-radius: var(--border-radius);
+            box-shadow: var(--card-shadow);
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        /* 投稿履歴 */
+        .post-history {
+            background: white;
+            border-radius: var(--border-radius);
+            box-shadow: var(--card-shadow);
+            overflow: hidden;
+        }
+
+        .post-item {
+            padding: 15px 20px;
+            border-bottom: 1px solid #f1f2f6;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .post-item:last-child {
+            border-bottom: none;
+        }
+
+        .post-emotion {
+            font-size: 24px;
+        }
+
+        .post-details {
+            flex: 1;
+        }
+
+        .post-message {
+            font-weight: 500;
+            margin-bottom: 4px;
+        }
+
+        .post-meta {
+            font-size: 12px;
+            color: #666;
+        }
+
+        /* アラート・通知 */
+        .alert {
+            padding: 15px 20px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            border-left: 4px solid;
+        }
+
+        .alert-success {
+            background: #d4edda;
+            color: #155724;
+            border-color: #28a745;
+        }
+
+        .alert-info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border-color: #17a2b8;
+        }
+
+        .alert-warning {
+            background: #fff3cd;
+            color: #856404;
+            border-color: #ffc107;
+        }
+
+        /* ローディング */
+        .loading {
+            text-align: center;
+            padding: 40px 20px;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid var(--primary-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* レスポンシブ対応 */
+        @media (max-width: 414px) {
+            .app-container {
+                max-width: 100%;
+            }
+            
+            .navigation {
+                width: 100%;
+            }
+            
+            .floating-btn {
+                right: 15px;
+                bottom: 85px;
+            }
+        }
+
+        /* PWA インストールプロンプト */
+        .install-prompt {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            padding: 15px 20px;
+            margin: 20px 0;
+            border-radius: 12px;
+            text-align: center;
+        }
+
+        .install-btn {
+            background: rgba(255,255,255,0.2);
+            border: 1px solid rgba(255,255,255,0.3);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 8px;
+            margin-top: 10px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <div class="header">
+            <select class="lang-selector" id="langSelector">
+                <option value="ja">🇯🇵 日本語</option>
+                <option value="en">🇺🇸 English</option>
+                <option value="es">🇪🇸 Español</option>
+                <option value="fr">🇫🇷 Français</option>
+                <option value="ko">🇰🇷 한국어</option>
+                <option value="zh">🇨🇳 中文</option>
+            </select>
+            <h1 class="app-title" data-translate="app_title">Positive Map</h1>
+            <p class="app-subtitle" data-translate="app_subtitle">世界中のポジティブな瞬間を共有しよう</p>
+        </div>
+
+        <!-- メイン画面（マップ + 統計） -->
+        <div class="screen active" id="homeScreen">
+            <div class="main-content">
+                <!-- PWA インストールプロンプト -->
+                <div class="install-prompt" id="installPrompt" style="display: none;">
+                    <div data-translate="install_title">📱 アプリとしてインストール</div>
+                    <button class="install-btn" id="installBtn" data-translate="install_button">インストール</button>
+                </div>
+
+                <!-- 統計概要 -->
+                <div class="stats-overview" id="statsOverview">
+                    <div class="stat-card" onclick="filterByEmotion('happy')">
+                        <span class="stat-emoji">😊</span>
+                        <div class="stat-number" id="happyCount">0</div>
+                        <div class="stat-label" data-translate="emotion_happy">嬉しい</div>
+                    </div>
+                    <div class="stat-card" onclick="filterByEmotion('love')">
+                        <span class="stat-emoji">❤️</span>
+                        <div class="stat-number" id="loveCount">0</div>
+                        <div class="stat-label" data-translate="emotion_love">愛しい</div>
+                    </div>
+                    <div class="stat-card" onclick="filterByEmotion('excited')">
+                        <span class="stat-emoji">🎉</span>
+                        <div class="stat-number" id="excitedCount">0</div>
+                        <div class="stat-label" data-translate="emotion_excited">興奮</div>
+                    </div>
+                    <div class="stat-card" onclick="filterByEmotion('grateful')">
+                        <span class="stat-emoji">🙏</span>
+                        <div class="stat-number" id="gratefulCount">0</div>
+                        <div class="stat-label" data-translate="emotion_grateful">感謝</div>
+                    </div>
+                    <div class="stat-card" onclick="filterByEmotion('peaceful')">
+                        <span class="stat-emoji">😌</span>
+                        <div class="stat-number" id="peacefulCount">0</div>
+                        <div class="stat-label" data-translate="emotion_peaceful">平和</div>
+                    </div>
+                    <div class="stat-card" onclick="filterByEmotion('proud')">
+                        <span class="stat-emoji">😤</span>
+                        <div class="stat-number" id="proudCount">0</div>
+                        <div class="stat-label" data-translate="emotion_proud">誇り</div>
+                    </div>
+                </div>
+
+                <!-- インタラクティブマップ -->
+                <div class="map-container">
+                    <div class="map-controls">
+                        <button class="map-control-btn" onclick="centerOnUser()" data-translate="center_map">現在地</button>
+                        <button class="map-control-btn" onclick="showAllPosts()" data-translate="show_all">全て表示</button>
+                    </div>
+                    <div id="map"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 投稿画面 -->
+        <div class="screen" id="postScreen">
+            <div class="main-content">
+                <div class="post-form">
+                    <h2 data-translate="post_title">今の気持ちを投稿</h2>
+                    
+                    <div class="form-section">
+                        <label class="form-label" data-translate="select_emotion">感情を選択してください</label>
+                        <div class="emotion-grid">
+                            <button class="emotion-btn" data-emotion="happy">
+                                <span class="emotion-emoji">😊</span>
+                                <span data-translate="emotion_happy">嬉しい</span>
+                            </button>
+                            <button class="emotion-btn" data-emotion="love">
+                                <span class="emotion-emoji">❤️</span>
+                                <span data-translate="emotion_love">愛</span>
+                            </button>
+                            <button class="emotion-btn" data-emotion="excited">
+                                <span class="emotion-emoji">🎉</span>
+                                <span data-translate="emotion_excited">興奮</span>
+                            </button>
+                            <button class="emotion-btn" data-emotion="grateful">
+                                <span class="emotion-emoji">🙏</span>
+                                <span data-translate="emotion_grateful">感謝</span>
+                            </button>
+                            <button class="emotion-btn" data-emotion="peaceful">
+                                <span class="emotion-emoji">😌</span>
+                                <span data-translate="emotion_peaceful">平和</span>
+                            </button>
+                            <button class="emotion-btn" data-emotion="proud">
+                                <span class="emotion-emoji">😤</span>
+                                <span data-translate="emotion_proud">誇り</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="form-section">
+                        <label class="form-label" data-translate="optional_message">メッセージ（任意）</label>
+                        <textarea class="form-textarea" id="postMessage" placeholder="今の気持ちを詳しく..." data-translate-placeholder="message_placeholder"></textarea>
+                    </div>
+
+                    <div class="form-section">
+                        <div class="location-info" id="locationInfo">
+                            <div class="location-status" data-translate="getting_location">📍 位置情報を取得中...</div>
+                            <div class="coordinates" id="coordinates"></div>
+                        </div>
+                    </div>
+
+                    <button class="btn" id="submitPostBtn" onclick="submitPost()" disabled data-translate="post_button">投稿する</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- プロフィール画面 -->
+        <div class="screen" id="profileScreen">
+            <div class="main-content">
+                <div class="profile-header">
+                    <div class="profile-avatar">😊</div>
+                    <h3 data-translate="anonymous_user">匿名ユーザー</h3>
+                    <div class="user-stats">
+                        <div class="user-stat">
+                            <div class="user-stat-number" id="userPostCount">0</div>
+                            <div class="user-stat-label" data-translate="posts">投稿</div>
+                        </div>
+                        <div class="user-stat">
+                            <div class="user-stat-number" id="userDays">0</div>
+                            <div class="user-stat-label" data-translate="days">日間</div>
+                        </div>
+                        <div class="user-stat">
+                            <div class="user-stat-number" id="userCountries">1</div>
+                            <div class="user-stat-label" data-translate="countries">国</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="settings-form">
+                    <h3 data-translate="user_settings">ユーザー設定</h3>
+                    
+                    <div class="form-row">
+                        <div>
+                            <label class="form-label" data-translate="age_group">年齢層</label>
+                            <select class="form-input" id="ageGroup">
+                                <option value="" data-translate="select_age">選択してください</option>
+                                <option value="18-25">18-25</option>
+                                <option value="26-35">26-35</option>
+                                <option value="36-45">36-45</option>
+                                <option value="46-55">46-55</option>
+                                <option value="56+">56+</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="form-label" data-translate="country">国</label>
+                            <select class="form-input" id="userCountry">
+                                <option value="" data-translate="select_country">選択してください</option>
+                                <option value="JP">🇯🇵 日本</option>
+                                <option value="US">🇺🇸 アメリカ</option>
+                                <option value="GB">🇬🇧 イギリス</option>
+                                <option value="FR">🇫🇷 フランス</option>
+                                <option value="DE">🇩🇪 ドイツ</option>
+                                <option value="CN">🇨🇳 中国</option>
+                                <option value="KR">🇰🇷 韓国</option>
+                                <option value="ES">🇪🇸 スペイン</option>
+                                <option value="IT">🇮🇹 イタリア</option>
+                                <option value="AU">🇦🇺 オーストラリア</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <button class="btn btn-secondary" onclick="saveProfile()" data-translate="save_profile">設定を保存</button>
+                </div>
+
+                <!-- 投稿履歴 -->
+                <div class="post-history" id="postHistory">
+                    <h3 style="padding: 20px 20px 0;" data-translate="post_history">投稿履歴</h3>
+                    <div id="historyList">
+                        <div class="loading">
+                            <div data-translate="no_posts">まだ投稿がありません</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- フローティング投稿ボタン -->
+        <button class="floating-btn" onclick="showScreen('postScreen')" id="floatingPostBtn">+</button>
+
+        <!-- ナビゲーション -->
+        <div class="navigation">
+            <button class="nav-btn active" onclick="showScreen('homeScreen')">
+                <span class="nav-icon">🗺️</span>
+                <span class="nav-label" data-translate="nav_map">マップ</span>
+            </button>
+            <button class="nav-btn" onclick="showScreen('postScreen')">
+                <span class="nav-icon">✏️</span>
+                <span class="nav-label" data-translate="nav_post">投稿</span>
+            </button>
+            <button class="nav-btn" onclick="showScreen('profileScreen')">
+                <span class="nav-icon">👤</span>
+                <span class="nav-label" data-translate="nav_profile">プロフィール</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Leaflet JavaScript -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+    
+    <script>
+        // グローバル変数
+        let map;
+        let userLocation = null;
+        let selectedEmotion = null;
+        let currentLang = 'ja';
+        let allPosts = [];
+        let markersLayer;
+
+        // 多言語翻訳データ
+        const translations = {
+            ja: {
+                app_title: "Positive Map",
+                app_subtitle: "世界中のポジティブな瞬間を共有しよう",
+                emotion_happy: "嬉しい",
+                emotion_love: "愛しい",
+                emotion_excited: "興奮",
+                emotion_grateful: "感謝",
+                emotion_peaceful: "平和",
+                emotion_proud: "誇り",
+                post_title: "今の気持ちを投稿",
+                select_emotion: "感情を選択してください",
+                optional_message: "メッセージ（任意）",
+                message_placeholder: "今の気持ちを詳しく...",
+                getting_location: "📍 位置情報を取得中...",
+                location_found: "📍 位置情報取得完了",
+                location_error: "📍 位置情報の取得に失敗しました",
+                post_button: "投稿する",
+                center_map: "現在地",
+                show_all: "全て表示",
+                anonymous_user: "匿名ユーザー",
+                posts: "投稿",
+                days: "日間",
+                countries: "国",
+                user_settings: "ユーザー設定",
+                age_group: "年齢層",
+                country: "国",
+                select_age: "選択してください",
+                select_country: "選択してください",
+                save_profile: "設定を保存",
+                post_history: "投稿履歴",
+                no_posts: "まだ投稿がありません",
+                nav_map: "マップ",
+                nav_post: "投稿",
+                nav_profile: "プロフィール",
+                post_success: "投稿が完了しました！",
+                post_error: "投稿に失敗しました",
+                profile_saved: "プロフィールを保存しました",
+                install_title: "📱 アプリとしてインストール",
+                install_button: "インストール",
+                just_now: "たった今",
+                minutes_ago: "分前",
+                hours_ago: "時間前",
+                days_ago: "日前"
+            },
+            en: {
+                app_title: "Positive Map",
+                app_subtitle: "Share positive moments around the world",
+                emotion_happy: "Happy",
+                emotion_love: "Love",
+                emotion_excited: "Excited",
+                emotion_grateful: "Grateful",
+                emotion_peaceful: "Peaceful",
+                emotion_proud: "Proud",
+                post_title: "Share Your Feeling",
+                select_emotion: "Select your emotion",
+                optional_message: "Message (Optional)",
+                message_placeholder: "Tell us how you're feeling...",
+                getting_location: "📍 Getting your location...",
+                location_found: "📍 Location found",
+                location_error: "📍 Failed to get location",
+                post_button: "Post",
+                center_map: "My Location",
+                show_all: "Show All",
+                anonymous_user: "Anonymous User",
+                posts: "Posts",
+                days: "Days",
+                countries: "Countries",
+                user_settings: "User Settings",
+                age_group: "Age Group",
+                country: "Country",
+                select_age: "Select age",
+                select_country: "Select country",
+                save_profile: "Save Profile",
+                post_history: "Post History",
+                no_posts: "No posts yet",
+                nav_map: "Map",
+                nav_post: "Post",
+                nav_profile: "Profile",
+                post_success: "Post submitted successfully!",
+                post_error: "Failed to submit post",
+                profile_saved: "Profile saved successfully",
+                install_title: "📱 Install as App",
+                install_button: "Install",
+                just_now: "Just now",
+                minutes_ago: "min ago",
+                hours_ago: "hr ago",
+                days_ago: "days ago"
+            },
+            es: {
+                app_title: "Positive Map",
+                app_subtitle: "Comparte momentos positivos en todo el mundo",
+                emotion_happy: "Feliz",
+                emotion_love: "Amor",
+                emotion_excited: "Emocionado",
+                emotion_grateful: "Agradecido",
+                emotion_peaceful: "Pacífico",
+                emotion_proud: "Orgulloso",
+                post_title: "Comparte tu Sentimiento",
+                select_emotion: "Selecciona tu emoción",
+                optional_message: "Mensaje (Opcional)",
+                message_placeholder: "Cuéntanos cómo te sientes...",
+                getting_location: "📍 Obteniendo tu ubicación...",
+                location_found: "📍 Ubicación encontrada",
+                location_error: "📍 Error al obtener ubicación",
+                post_button: "Publicar",
+                center_map: "Mi Ubicación",
+                show_all: "Mostrar Todo",
+                anonymous_user: "Usuario Anónimo",
+                posts: "Publicaciones",
+                days: "Días",
+                countries: "Países",
+                user_settings: "Configuración de Usuario",
+                age_group: "Grupo de Edad",
+                country: "País",
+                select_age: "Seleccionar edad",
+                select_country: "Seleccionar país",
+                save_profile: "Guardar Perfil",
+                post_history: "Historial de Publicaciones",
+                no_posts: "Aún no hay publicaciones",
+                nav_map: "Mapa",
+                nav_post: "Publicar",
+                nav_profile: "Perfil",
+                post_success: "¡Publicación enviada con éxito!",
+                post_error: "Error al enviar publicación",
+                profile_saved: "Perfil guardado con éxito",
+                install_title: "📱 Instalar como App",
+                install_button: "Instalar",
+                just_now: "Ahora mismo",
+                minutes_ago: "min atrás",
+                hours_ago: "hr atrás",
+                days_ago: "días atrás"
+            }
+        };
+
+        // アプリケーション初期化
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeApp();
+        });
+
+        function initializeApp() {
+            // 地図初期化
+            initializeMap();
+            
+            // 位置情報取得
+            getUserLocation();
+            
+            // イベントリスナー設定
+            setupEventListeners();
+            
+            // 保存されたデータ読み込み
+            loadSavedData();
+            
+            // 統計更新
+            updateStatistics();
+            
+            // PWA設定
+            setupPWA();
+            
+            // 言語設定
+            changeLanguage(currentLang);
+        }
+
+        // 地図初期化
+        function initializeMap() {
+            // デフォルト位置（東京）
+            const defaultLocation = [35.6762, 139.6503];
+            
+            map = L.map('map').setView(defaultLocation, 10);
+            
+            // OpenStreetMapタイル追加
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors',
+                maxZoom: 19,
+                tileSize: 256,
+                zoomOffset: 0
+            }).addTo(map);
+
+            // マーカー層初期化
+            markersLayer = L.layerGroup().addTo(map);
+            
+            // 保存された投稿をマップに表示
+            displayPostsOnMap();
+        }
+
+        // 位置情報取得
+        function getUserLocation() {
+            const locationInfo = document.getElementById('locationInfo');
+            const coordinates = document.getElementById('coordinates');
+
+            if ("geolocation" in navigator) {
+                navigator.geolocation.getCurrentPosition(
+                    function(position) {
+                        userLocation = {
+                            lat: position.coords.latitude,
+                            lng: position.coords.longitude
+                        };
+
+                        // UI更新
+                        locationInfo.querySelector('.location-status').textContent = 
+                            translations[currentLang].location_found || "📍 位置情報取得完了";
+                        coordinates.textContent = 
+                            `${userLocation.lat.toFixed(6)}, ${userLocation.lng.toFixed(6)}`;
+
+                        // 地図の中心を現在地に移動
+                        map.setView([userLocation.lat, userLocation.lng], 13);
+
+                        // 投稿ボタン有効化
+                        checkFormValidity();
+                    },
+                    function(error) {
+                        locationInfo.querySelector('.location-status').textContent = 
+                            translations[currentLang].location_error || "📍 位置情報の取得に失敗しました";
+                        coordinates.textContent = "位置情報を利用できません";
+                        
+                        // 大まかな位置でも投稿可能にする
+                        userLocation = { lat: 35.6762, lng: 139.6503 }; // 東京
+                        checkFormValidity();
+                    },
+                    {
+                        enableHighAccuracy: true,
+                        timeout: 10000,
+                        maximumAge: 300000
+                    }
+                );
+            } else {
+                locationInfo.querySelector('.location-status').textContent = 
+                    "位置情報がサポートされていません";
+                userLocation = { lat: 35.6762, lng: 139.6503 };
+                checkFormValidity();
+            }
+        }
+
+        // イベントリスナー設定
+        function setupEventListeners() {
+            // 感情ボタン
+            document.querySelectorAll('.emotion-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    document.querySelectorAll('.emotion-btn').forEach(b => b.classList.remove('selected'));
+                    this.classList.add('selected');
+                    selectedEmotion = this.dataset.emotion;
+                    checkFormValidity();
+                });
+            });
+
+            // 言語切り替え
+            document.getElementById('langSelector').addEventListener('change', function() {
+                changeLanguage(this.value);
+            });
+
+            // プロフィール保存
+            document.getElementById('ageGroup').addEventListener('change', saveProfile);
+            document.getElementById('userCountry').addEventListener('change', saveProfile);
+        }
+
+        // フォームバリデーション
+        function checkFormValidity() {
+            const submitBtn = document.getElementById('submitPostBtn');
+            const isValid = selectedEmotion && userLocation;
+            
+            submitBtn.disabled = !isValid;
+            if (isValid) {
+                submitBtn.textContent = translations[currentLang].post_button || "投稿する";
+            }
+        }
+
+        // 投稿送信
+        function submitPost() {
+            if (!selectedEmotion || !userLocation) {
+                showAlert(translations[currentLang].post_error || "投稿に失敗しました", 'warning');
+                return;
+            }
+
+            const message = document.getElementById('postMessage').value;
+            const timestamp = Date.now();
+
+            const post = {
+                id: generateId(),
+                emotion: selectedEmotion,
+                message: message,
+                location: userLocation,
+                timestamp: timestamp,
+                country: document.getElementById('userCountry').value || 'JP',
+                ageGroup: document.getElementById('ageGroup').value || '25-35'
+            };
+
+            // LocalStorageに保存
+            savePost(post);
+
+            // 地図に追加
+            addPostToMap(post);
+
+            // 統計更新
+            updateStatistics();
+
+            // 成功メッセージ
+            showAlert(translations[currentLang].post_success || "投稿が完了しました！", 'success');
+
+            // フォームリセット
+            resetPostForm();
+
+            // ホーム画面に戻る
+            setTimeout(() => {
+                showScreen('homeScreen');
+            }, 1500);
+        }
+
+        // 投稿をLocalStorageに保存
+        function savePost(post) {
+            const posts = JSON.parse(localStorage.getItem('happyspots_posts') || '[]');
+            posts.push(post);
+            localStorage.setItem('happyspots_posts', JSON.stringify(posts));
+            allPosts = posts;
+        }
+
+        // 保存されたデータを読み込み
+        function loadSavedData() {
+            // 投稿データ
+            allPosts = JSON.parse(localStorage.getItem('happyspots_posts') || '[]');
+            
+            // ユーザー設定
+            const profile = JSON.parse(localStorage.getItem('happyspots_profile') || '{}');
+            if (profile.ageGroup) {
+                document.getElementById('ageGroup').value = profile.ageGroup;
+            }
+            if (profile.country) {
+                document.getElementById('userCountry').value = profile.country;
+            }
+
+            // 言語設定
+            const savedLang = localStorage.getItem('happyspots_language') || 'ja';
+            currentLang = savedLang;
+            document.getElementById('langSelector').value = savedLang;
+        }
+
+        // 地図に投稿を表示
+        function displayPostsOnMap() {
+            markersLayer.clearLayers();
+
+            allPosts.forEach(post => {
+                addPostToMap(post);
+            });
+        }
+
+        // 個別投稿をマップに追加
+        function addPostToMap(post) {
+            const emotionEmojis = {
+                happy: '😊',
+                love: '❤️',
+                excited: '🎉',
+                grateful: '🙏',
+                peaceful: '😌',
+                proud: '😤'
+            };
+
+            const marker = L.marker([post.location.lat, post.location.lng])
+                .bindPopup(`
+                    <div style="text-align: center; padding: 10px;">
+                        <div style="font-size: 24px; margin-bottom: 8px;">
+                            ${emotionEmojis[post.emotion]}
+                        </div>
+                        <div style="font-weight: bold; margin-bottom: 5px;">
+                            ${translations[currentLang]['emotion_' + post.emotion] || post.emotion}
+                        </div>
+                        ${post.message ? `<div style="font-style: italic; margin-bottom: 8px;">"${post.message}"</div>` : ''}
+                        <div style="font-size: 12px; color: #666;">
+                            ${formatTimeAgo(post.timestamp)}
+                        </div>
+                    </div>
+                `)
+                .addTo(markersLayer);
+        }
+
+        // 統計更新
+        function updateStatistics() {
+            const counts = {
+                happy: 0,
+                love: 0,
+                excited: 0,
+                grateful: 0,
+                peaceful: 0,
+                proud: 0
+            };
+
+            allPosts.forEach(post => {
+                if (counts.hasOwnProperty(post.emotion)) {
+                    counts[post.emotion]++;
+                }
+            });
+
+            // UI更新
+            document.getElementById('happyCount').textContent = counts.happy;
+            document.getElementById('loveCount').textContent = counts.love;
+            document.getElementById('excitedCount').textContent = counts.excited;
+            document.getElementById('gratefulCount').textContent = counts.grateful;
+
+            // プロフィール統計
+            document.getElementById('userPostCount').textContent = allPosts.length;
+            
+            const firstPost = allPosts.length > 0 ? Math.min(...allPosts.map(p => p.timestamp)) : Date.now();
+            const daysSince = Math.floor((Date.now() - firstPost) / (1000 * 60 * 60 * 24));
+            document.getElementById('userDays').textContent = daysSince;
+
+            // 投稿履歴更新
+            updatePostHistory();
+        }
+
+        // 投稿履歴更新
+        function updatePostHistory() {
+            const historyList = document.getElementById('historyList');
+            
+            if (allPosts.length === 0) {
+                historyList.innerHTML = `
+                    <div class="loading">
+                        <div data-translate="no_posts">${translations[currentLang].no_posts || "まだ投稿がありません"}</div>
+                    </div>
+                `;
+                return;
+            }
+
+            const emotionEmojis = {
+                happy: '😊',
+                love: '❤️',
+                excited: '🎉',
+                grateful: '🙏',
+                peaceful: '😌',
+                proud: '😤'
+            };
+
+            const sortedPosts = [...allPosts].sort((a, b) => b.timestamp - a.timestamp);
+            
+            historyList.innerHTML = sortedPosts.map(post => `
+                <div class="post-item">
+                    <div class="post-emotion">${emotionEmojis[post.emotion]}</div>
+                    <div class="post-details">
+                        <div class="post-message">
+                            ${post.message || translations[currentLang]['emotion_' + post.emotion] || post.emotion}
+                        </div>
+                        <div class="post-meta">
+                            ${formatTimeAgo(post.timestamp)}
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // 画面切り替え
+        function showScreen(screenId) {
+            document.querySelectorAll('.screen').forEach(screen => {
+                screen.classList.remove('active');
+            });
+            document.getElementById(screenId).classList.add('active');
+            
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+
+            // アクティブなナビボタンを設定
+            const navMapping = {
+                'homeScreen': 0,
+                'postScreen': 1,
+                'profileScreen': 2
+            };
+            const navButtons = document.querySelectorAll('.nav-btn');
+            if (navButtons[navMapping[screenId]]) {
+                navButtons[navMapping[screenId]].classList.add('active');
+            }
+
+            // フローティングボタンの表示/非表示
+            const floatingBtn = document.getElementById('floatingPostBtn');
+            if (screenId === 'postScreen') {
+                floatingBtn.style.display = 'none';
+            } else {
+                floatingBtn.style.display = 'block';
+            }
+        }
+
+        // フォームリセット
+        function resetPostForm() {
+            selectedEmotion = null;
+            document.querySelectorAll('.emotion-btn').forEach(btn => {
+                btn.classList.remove('selected');
+            });
+            document.getElementById('postMessage').value = '';
+            checkFormValidity();
+        }
+
+        // 感情でフィルター
+        function filterByEmotion(emotion) {
+            markersLayer.clearLayers();
+            
+            const filteredPosts = allPosts.filter(post => post.emotion === emotion);
+            filteredPosts.forEach(post => {
+                addPostToMap(post);
+            });
+
+            if (filteredPosts.length > 0) {
+                const bounds = L.latLngBounds(filteredPosts.map(post => [post.location.lat, post.location.lng]));
+                map.fitBounds(bounds, { padding: [20, 20] });
+            }
+        }
+
+        // 全投稿表示
+        function showAllPosts() {
+            displayPostsOnMap();
+            
+            if (allPosts.length > 0) {
+                const bounds = L.latLngBounds(allPosts.map(post => [post.location.lat, post.location.lng]));
+                map.fitBounds(bounds, { padding: [20, 20] });
+            }
+        }
+
+        // 現在地に地図を中央揃え
+        function centerOnUser() {
+            if (userLocation) {
+                map.setView([userLocation.lat, userLocation.lng], 15);
+            }
+        }
+
+        // プロフィール保存
+        function saveProfile() {
+            const profile = {
+                ageGroup: document.getElementById('ageGroup').value,
+                country: document.getElementById('userCountry').value
+            };
+            
+            localStorage.setItem('happyspots_profile', JSON.stringify(profile));
+            showAlert(translations[currentLang].profile_saved || "プロフィールを保存しました", 'success');
+        }
+
+        // 多言語対応
+        function changeLanguage(lang) {
+            currentLang = lang;
+            localStorage.setItem('happyspots_language', lang);
+            
+            document.querySelectorAll('[data-translate]').forEach(element => {
+                const key = element.dataset.translate;
+                if (translations[lang] && translations[lang][key]) {
+                    element.textContent = translations[lang][key];
+                }
+            });
+
+            document.querySelectorAll('[data-translate-placeholder]').forEach(element => {
+                const key = element.dataset.translatePlaceholder;
+                if (translations[lang] && translations[lang][key]) {
+                    element.placeholder = translations[lang][key];
+                }
+            });
+
+            // 地図の投稿ポップアップも更新
+            displayPostsOnMap();
+            
+            // 統計も更新
+            updateStatistics();
+        }
+
+        // PWA設定
+        function setupPWA() {
+            // Service Worker登録
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.register('/sw.js')
+                    .then(registration => console.log('SW registered'))
+                    .catch(error => console.log('SW registration failed'));
+            }
+
+            // インストールプロンプト
+            let deferredPrompt;
+            
+            window.addEventListener('beforeinstallprompt', (e) => {
+                e.preventDefault();
+                deferredPrompt = e;
+                document.getElementById('installPrompt').style.display = 'block';
+            });
+
+            document.getElementById('installBtn').addEventListener('click', async () => {
+                if (deferredPrompt) {
+                    deferredPrompt.prompt();
+                    const { outcome } = await deferredPrompt.userChoice;
+                    deferredPrompt = null;
+                    document.getElementById('installPrompt').style.display = 'none';
+                }
+            });
+        }
+
+        // ユーティリティ関数
+        function generateId() {
+            return Date.now().toString(36) + Math.random().toString(36).substr(2);
+        }
+
+        function formatTimeAgo(timestamp) {
+            const now = Date.now();
+            const diff = now - timestamp;
+            const minutes = Math.floor(diff / (1000 * 60));
+            const hours = Math.floor(diff / (1000 * 60 * 60));
+            const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+
+            if (minutes < 1) {
+                return translations[currentLang].just_now || "たった今";
+            } else if (minutes < 60) {
+                return `${minutes}${translations[currentLang].minutes_ago || "分前"}`;
+            } else if (hours < 24) {
+                return `${hours}${translations[currentLang].hours_ago || "時間前"}`;
+            } else {
+                return `${days}${translations[currentLang].days_ago || "日前"}`;
+            }
+        }
+
+        function showAlert(message, type = 'info') {
+            const alertDiv = document.createElement('div');
+            alertDiv.className = `alert alert-${type}`;
+            alertDiv.textContent = message;
+            
+            const mainContent = document.querySelector('.screen.active .main-content');
+            mainContent.insertBefore(alertDiv, mainContent.firstChild);
+            
+            setTimeout(() => {
+                if (alertDiv.parentNode) {
+                    alertDiv.parentNode.removeChild(alertDiv);
+                }
+            }, 3000);
+        }
+    </script>
+
+    <!-- PWA Manifest -->
+    <script>
+        // Manifest.json をインライン定義
+        const manifestData = {
+            "name": "HappySpots - ポジティブ感情共有アプリ",
+            "short_name": "HappySpots",
+            "description": "世界中のポジティブな瞬間を共有しよう",
+            "start_url": "/",
+            "display": "standalone",
+            "background_color": "#ffffff",
+            "theme_color": "#ff6b6b",
+            "orientation": "portrait",
+            "icons": [
+                {
+                    "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect fill='%23ff6b6b' width='192' height='192' rx='20'/><text x='96' y='120' font-size='80' text-anchor='middle' fill='white'>😊</text></svg>",
+                    "sizes": "192x192",
+                    "type": "image/svg+xml"
+                },
+                {
+                    "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><rect fill='%23ff6b6b' width='512' height='512' rx='50'/><text x='256' y='320' font-size='200' text-anchor='middle' fill='white'>😊</text></svg>",
+                    "sizes": "512x512",
+                    "type": "image/svg+xml"
+                }
+            ]
+        };
+
+        // Manifest をBlobとしてインライン生成
+        const manifestBlob = new Blob([JSON.stringify(manifestData)], {
+            type: 'application/json'
+        });
+        const manifestURL = URL.createObjectURL(manifestBlob);
+        
+        const link = document.createElement('link');
+        link.rel = 'manifest';
+        link.href = manifestURL;
+        document.head.appendChild(link);
+    </script>
+</body>
+</html>
