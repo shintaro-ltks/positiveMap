@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>HappySpots - ポジティブ感情共有アプリ</title>
+    <title>Positive Map - ポジティブ感情共有アプリ</title>
     
     <!-- PWA メタタグ -->
     <meta name="theme-color" content="#ff6b6b">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="HappySpots">
+    <meta name="apple-mobile-web-app-title" content="Positive Map">
     
     <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
@@ -108,19 +108,19 @@
         .app-title {
             font-size: 32px;
             font-weight: 700;
-            margin-bottom: 8px;
+            margin-bottom: 1px;
             text-shadow: 0 2px 10px rgba(0,0,0,0.1);
         }
 
         .app-subtitle {
-            font-size: 16px;
+            font-size: 10px;
             opacity: 0.9;
-            font-weight: 300;
+            font-weight: 500;
         }
 
         .main-content {
             padding: 20px;
-            padding-bottom: 100px;
+            padding-bottom: 10px;
         }
 
         .screen {
@@ -143,7 +143,7 @@
             color: white;
             padding: 20px;
             border-radius: var(--border-radius);
-            margin-bottom: 20px;
+            margin-bottom: 1px;
             text-align: center;
         }
 
@@ -202,9 +202,9 @@
         /* 統計表示 */
         .stats-overview {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
-            gap: 15px;
-            margin-bottom: 30px;
+            grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+            gap: 5px;
+            margin-bottom: 10px;
         }
 
         .stat-card {
@@ -225,7 +225,7 @@
 
         .stat-emoji {
             font-size: 28px;
-            margin-bottom: 10px;
+            margin-bottom: 1px;
             display: block;
         }
 
@@ -233,7 +233,7 @@
             font-size: 24px;
             font-weight: 700;
             color: var(--primary-color);
-            margin-bottom: 5px;
+            margin-bottom: 1px;
         }
 
         .stat-label {
@@ -263,6 +263,7 @@
         /* 投稿フォーム */
         .post-form {
             background: white;
+          grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
             padding: 25px;
             border-radius: var(--border-radius);
             box-shadow: var(--card-shadow);
@@ -660,12 +661,14 @@
             <select class="lang-selector" id="langSelector">
                 <option value="ja">🇯🇵 日本語</option>
                 <option value="en">🇺🇸 English</option>
+              <!--
                 <option value="es">🇪🇸 Español</option>
                 <option value="fr">🇫🇷 Français</option>
                 <option value="ko">🇰🇷 한국어</option>
                 <option value="zh">🇨🇳 中文</option>
+              -->
             </select>
-            <h1 class="app-title" data-translate="app_title">HappySpots</h1>
+            <h1 class="app-title" data-translate="app_title">Positve Map</h1>
             <p class="app-subtitle" data-translate="app_subtitle">世界中のポジティブな瞬間をリアルタイム共有</p>
         </div>
 
@@ -675,7 +678,7 @@
                 <!-- リアルタイム統計 -->
                 <div class="realtime-stats">
                     <div class="total-posts" id="totalPosts">---</div>
-                    <div class="stats-label" data-translate="total_happiness">総ハッピー投稿数</div>
+                    <div class="stats-label" data-translate="total_happiness">総投稿数</div>
                     <div class="online-users" id="onlineUsers" data-translate="users_online">🌟 みんなで幸せを共有中</div>
                 </div>
 
@@ -754,6 +757,7 @@
                                 <span class="emotion-emoji">🙏</span>
                                 <span data-translate="emotion_grateful">感謝</span>
                             </button>
+                          <!--
                             <button class="emotion-btn" data-emotion="peaceful">
                                 <span class="emotion-emoji">😌</span>
                                 <span data-translate="emotion_peaceful">平和</span>
@@ -762,6 +766,7 @@
                                 <span class="emotion-emoji">😤</span>
                                 <span data-translate="emotion_proud">誇り</span>
                             </button>
+                          -->
                         </div>
                     </div>
 
@@ -903,7 +908,7 @@ try {
         // 多言語翻訳データ
         const translations = {
             ja: {
-                app_title: "HappySpots",
+                app_title: "Positive Map",
                 app_subtitle: "世界中のポジティブな瞬間をリアルタイム共有",
                 emotion_happy: "嬉しい",
                 emotion_love: "愛",
@@ -926,15 +931,15 @@ try {
                 nav_data: "データ",
                 post_success: "投稿が世界に共有されました！",
                 post_error: "投稿に失敗しました",
-                total_happiness: "総ハッピー投稿数",
+                total_happiness: "総ポジティブ投稿数",
                 users_online: "🌟 みんなで幸せを共有中",
                 live_feed: "リアルタイム投稿",
                 loading_posts: "投稿を読み込み中...",
                 data_analytics: "データ分析",
                 total_users: "総ユーザー数",
                 countries_represented: "参加国数",
-                hourly_happiness: "時間別ハッピー度",
-                happiness_by_country: "国別ハッピー度",
+                hourly_happiness: "時間別ポジティブ度",
+                happiness_by_country: "国別ポジティブ度",
                 analyzing_data: "データを分析中...",
                 loading_countries: "国別データを読み込み中...",
                 just_now: "たった今",
@@ -946,7 +951,7 @@ try {
                 offline: "オフライン"
             },
             en: {
-                app_title: "HappySpots",
+                app_title: "Positive Map",
                 app_subtitle: "Share positive moments worldwide in real-time",
                 emotion_happy: "Happy",
                 emotion_love: "Love",
@@ -1818,8 +1823,8 @@ async function loadFirebaseData() {
 
         // PWA Manifest
         const manifestData = {
-            "name": "HappySpots - ポジティブ感情共有アプリ",
-            "short_name": "HappySpots",
+            "name": "Positive Map - ポジティブ感情共有アプリ",
+            "short_name": "Positive Map",
             "description": "世界中のポジティブな瞬間をリアルタイム共有",
             "start_url": "/",
             "display": "standalone",
